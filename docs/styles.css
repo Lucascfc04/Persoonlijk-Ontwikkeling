@@ -514,6 +514,24 @@ details.practice-item {
   margin-top: 16px;
 }
 
+.analysis-card {
+  background: linear-gradient(135deg, #eef8f2, #ffffff);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 18px;
+}
+
+.analysis-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+
+.analysis-score {
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
 .quick-list {
   display: grid;
   gap: 10px;

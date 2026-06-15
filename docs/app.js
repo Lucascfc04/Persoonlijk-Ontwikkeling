@@ -11,6 +11,29 @@ const navItems = [
   { id: "export", label: "Export" }
 ];
 
+const ANALYSIS_RULES = {
+  beroepsproducten: {
+    signals: ["deskresearch", "trendanalyse", "website", "visualisaties", "concept", "praktijkwaarde", "onderbouwing", "professioneel", "samenhang", "beperk"],
+    special: ["beroepsproduct", "opdrachtgever", "valid", "huidige situatie", "gewenste situatie"]
+  },
+  eigenaarschap: {
+    signals: ["ik heb", "mijn bijdrage", "ik koos", "ik bedacht", "ik maakte", "ik voerde", "ik bouwde", "ik vormgegeven", "verantwoordelijkheid", "eigen bijdrage"],
+    special: ["rol", "groep", "keuze", "onderbouwing", "verdedigen", "website", "visualisatie"]
+  },
+  reflectie: {
+    signals: ["achteraf", "zwakte", "beperk", "aannames", "risico", "tunnel", "valid", "volgende keer", "kritisch", "leerpunt"],
+    special: ["kwaliteit", "toepasbaarheid", "systeem", "opdrachtgever", "planning", "rollen"]
+  },
+  leerproces: {
+    signals: ["leerdoel", "geleerd", "workshop", "planner", "acties", "structuur", "ai", "toekomstige projecten", "motivatie", "samenwerking"],
+    special: ["teams planner", "stappen", "overzicht", "verbeteren", "ontwikkeld"]
+  },
+  ontwikkeling: {
+    signals: ["circulariteit", "systeemdenken", "duurzame waardecreatie", "toekomstbestendigheid", "greencomp", "foodsector", "waardecreatie", "grondstoffen", "ketens", "impact"],
+    special: ["recycling", "professionele houding", "toekomst", "systemen", "circulair"]
+  }
+};
+
 function averageAnswers(values = []) {
   return values.length ? values.reduce((sum, value) => sum + Number(value || 0), 0) / values.length : 0;
 }
@@ -48,6 +71,85 @@ function statusFromPoints(totalPoints) {
 
 function finalGrade(totalPoints) {
   return Math.round((((totalPoints / MAX_TOTAL_POINTS) * 9) + 1) * 10) / 10;
+}
+
+function normalizeText(text = "") {
+  return text.toLowerCase();
+}
+
+function countWords(text = "") {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function uniqueMatches(text, phrases = []) {
+  const normalized = normalizeText(text);
+  return phrases.filter((phrase) => normalized.includes(phrase.toLowerCase()));
+}
+
+function metricFromThresholds(value, thresholds) {
+  if (value >= thresholds[2]) return 3;
+  if (value >= thresholds[1]) return 2;
+  if (value >= thresholds[0]) return 1;
+  return 0;
+}
+
+function buildTextAnalysis() {
+  const byCriterion = {};
+
+  criteria.forEach((criterion) => {
+    const text = state.reflections[criterion.id] || "";
+    const rules = ANALYSIS_RULES[criterion.id];
+    const matchedSignals = uniqueMatches(text, rules.signals);
+    const matchedSpecial = uniqueMatches(text, rules.special);
+    const evidenceMentions = criterion.evidence.filter((item) => normalizeText(text).includes(item.label.toLowerCase()) || (state.evidenceByCriterion[criterion.id] || []).includes(item.label));
+    const connectorCount = uniqueMatches(text, ["omdat", "daardoor", "waardoor", "hierdoor", "daarnaast", "tegelijkertijd", "achteraf", "bijvoorbeeld", "in de toekomst"]).length;
+    const words = countWords(text);
+
+    const metrics = [
+      metricFromThresholds(words, [80, 140, 210]),
+      metricFromThresholds(matchedSignals.length, [2, 4, 6]),
+      metricFromThresholds(matchedSpecial.length, [1, 2, 4]),
+      metricFromThresholds(evidenceMentions.length, [1, 3, 5]),
+      metricFromThresholds(connectorCount, [2, 4, 6])
+    ];
+
+    const average = metrics.reduce((sum, value) => sum + value, 0) / metrics.length;
+    const score = scoreFromAverage(average);
+    const weighted = score * criterion.weging;
+    const missingSignals = rules.signals.filter((signal) => !matchedSignals.includes(signal)).slice(0, 4);
+
+    byCriterion[criterion.id] = {
+      average,
+      score,
+      weighted,
+      label: scoreLabel(score),
+      matchedSignals,
+      evidenceMentions: evidenceMentions.map((item) => item.label),
+      missingSignals,
+      words,
+      advice:
+        score <= 2
+          ? `De tekstanalyse mist nog duidelijke signalen zoals: ${missingSignals.join(", ") || "meer concrete onderbouwing"}.`
+          : "De tekstanalyse ziet voldoende inhoudssignalen. Houd de tekst concreet en bewijsgericht."
+    };
+  });
+
+  const totalPoints = Object.values(byCriterion).reduce((sum, item) => sum + item.weighted, 0);
+  return {
+    byCriterion,
+    totalPoints,
+    eindcijfer: finalGrade(totalPoints),
+    status: statusFromPoints(totalPoints),
+    eigenaarschapWarning: byCriterion.eigenaarschap.score === 1
+  };
+}
+
+function applyTextAnalysisToAnswers(analysisResults) {
+  criteria.forEach((criterion) => {
+    const autoAverage = analysisResults.byCriterion[criterion.id].average;
+    const autoValue = Math.max(0, Math.min(3, Math.round(autoAverage)));
+    state.answersByCriterion[criterion.id] = criterion.selfCheckQuestions.map(() => autoValue);
+  });
 }
 
 function buildInitialState() {
@@ -180,6 +282,7 @@ function renderScoreCard(title, result) {
 }
 
 function renderDashboard(results) {
+  const analysisResults = buildTextAnalysis();
   return `
     <section class="grid-2">
       <div class="panel">
@@ -194,6 +297,27 @@ function renderDashboard(results) {
           <div class="sub-card"><p class="muted tiny">Totaalscore</p><div class="score-value">${results.totalPoints}/48</div></div>
           <div class="sub-card"><p class="muted tiny">Eindcijfer</p><div class="score-value">${results.eindcijfer}</div></div>
           <div class="sub-card"><p class="muted tiny">Status</p><div class="score-value" style="font-size:1.5rem">${results.status}</div></div>
+        </div>
+      </div>
+    </section>
+    <section class="grid-2" style="margin-top:16px">
+      <div class="analysis-card">
+        <p class="eyebrow">Automatische tekstanalyse</p>
+        <h2>Lokale beoordeling van jouw tekst</h2>
+        <p class="muted">Deze analyse werkt zonder AI API en kijkt naar inhoudssignalen, onderbouwing, bewijswoorden en criteriumspecifieke patronen.</p>
+        <div class="grid-3">
+          <div class="sub-card compact"><p class="muted tiny">Totaalpunten</p><div class="analysis-score">${analysisResults.totalPoints}/48</div></div>
+          <div class="sub-card compact"><p class="muted tiny">Eindcijfer</p><div class="analysis-score">${analysisResults.eindcijfer}</div></div>
+          <div class="sub-card compact"><p class="muted tiny">Status</p><div class="analysis-score">${analysisResults.status}</div></div>
+        </div>
+        <div class="action-row">
+          <button class="primary-button" id="apply-analysis">Gebruik analyse als zelftoetsbasis</button>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="eyebrow">Belangrijkste signalen</p>
+        <div class="quick-list">
+          ${criteria.map((criterion) => `<div class="quick-item"><strong>${criterion.naam}</strong><span class="${analysisResults.byCriterion[criterion.id].score <= 2 ? "warn" : "ok"}">${analysisResults.byCriterion[criterion.id].label}</span></div>`).join("")}
         </div>
       </div>
     </section>
@@ -257,8 +381,10 @@ function renderProject() {
 }
 
 function renderCriteria(results) {
+  const analysisResults = buildTextAnalysis();
   return criteria.map((criterion) => {
     const result = results.byCriterion[criterion.id];
+    const autoResult = analysisResults.byCriterion[criterion.id];
     const answers = state.answersByCriterion[criterion.id];
     const evidence = state.evidenceByCriterion[criterion.id];
     return `<article class="criterion-card">
@@ -282,6 +408,7 @@ function renderCriteria(results) {
                 <div class="quick-item"><strong>Bewijs</strong><span class="muted">${evidence.length} geselecteerd</span></div>
                 <div class="quick-item"><strong>Niveau</strong><span class="${result.evidenceInfo.className}">${result.evidenceInfo.label}</span></div>
                 <div class="quick-item"><strong>Actie</strong><span class="muted">${result.score <= 2 ? "Nu aanscherpen" : "Vasthouden"}</span></div>
+                <div class="quick-item"><strong>Auto-analyse</strong><span class="${autoResult.score <= 2 ? "warn" : "ok"}">${autoResult.label}</span></div>
               </div>
             </div>
           </div>
@@ -310,6 +437,22 @@ function renderCriteria(results) {
             <div class="sub-card"><p class="eyebrow">Assessmenttip</p><p class="muted">${criterion.assessmentTip}</p></div>
             <div class="sub-card"><p class="eyebrow">Mogelijke assesservragen</p><ul class="simple-list">${criterion.assessorQuestions.slice(0, 3).map((question) => `<li>${question}</li>`).join("")}</ul></div>
           </div>
+          <div class="grid-2" style="margin-top:18px">
+            <div class="analysis-card">
+              <p class="eyebrow">Automatische tekstanalyse</p>
+              <p class="analysis-score ${autoResult.score <= 2 ? "warn" : "ok"}">${autoResult.score}/4 - ${autoResult.label}</p>
+              <p class="muted">Woorden: ${autoResult.words} | Herkende bewijsstukken: ${autoResult.evidenceMentions.length}</p>
+              <p class="muted">${autoResult.advice}</p>
+            </div>
+            <div class="analysis-card">
+              <p class="eyebrow">Wat herkent de site</p>
+              <ul class="analysis-list">
+                <li><strong>Gevonden signalen:</strong> ${autoResult.matchedSignals.slice(0, 6).join(", ") || "nog weinig duidelijke signalen"}</li>
+                <li><strong>Mogelijk nog toevoegen:</strong> ${autoResult.missingSignals.join(", ") || "kernsignalen zijn redelijk aanwezig"}</li>
+                <li><strong>Gevonden bewijswoorden:</strong> ${autoResult.evidenceMentions.join(", ") || "nog geen duidelijke bewijswoorden gevonden"}</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </details>
     </article>`;
@@ -329,8 +472,9 @@ function renderPractice() {
 }
 
 function renderExport(results) {
+  const analysisResults = buildTextAnalysis();
   return `<section class="grid-3">
-    <div class="export-card"><p class="eyebrow">Export</p><h2>Exporteer samenvatting</h2><p class="muted">Download een tekstbestand met projectcontext, reflectieteksten, geselecteerd bewijs, scores en oefenantwoorden.</p><button class="primary-button" id="export-summary">Exporteer samenvatting</button></div>
+    <div class="export-card"><p class="eyebrow">Export</p><h2>Exporteer samenvatting</h2><p class="muted">Download een tekstbestand met projectcontext, reflectieteksten, geselecteerd bewijs, scores en oefenantwoorden.</p><p class="muted tiny">Automatische tekstanalyse: ${analysisResults.totalPoints}/48 - ${analysisResults.status}</p><button class="primary-button" id="export-summary">Exporteer samenvatting</button></div>
     <div class="export-card"><p class="eyebrow">Inleverversie</p><h2>Download eindversie</h2><p class="muted">Download een schone tekstversie van jouw huidige reflectieteksten per criterium.</p><button class="secondary-button" id="download-final">Download eindversie</button></div>
     <div class="export-card"><p class="eyebrow">Assessmentpitch</p><h2>Kopieer assessmentpitch</h2><p class="muted">Maak in een klik een korte openingspitch op basis van jouw project, eigen bijdrage, beroepsproducten, leerpunt en ontwikkeling.</p><div class="action-row"><button class="secondary-button" id="copy-pitch">Kopieer assessmentpitch</button><button class="tertiary-button" id="load-report-export">Laad verslag opnieuw</button></div><p id="copy-state" class="muted tiny"></p></div>
   </section>`;
@@ -393,6 +537,12 @@ document.addEventListener("click", async (event) => {
   }
   if (event.target.id === "load-report" || event.target.id === "load-report-export") {
     loadReportAsBase();
+  }
+  if (event.target.id === "apply-analysis") {
+    const analysisResults = buildTextAnalysis();
+    applyTextAnalysisToAnswers(analysisResults);
+    saveState();
+    render();
   }
 });
 
