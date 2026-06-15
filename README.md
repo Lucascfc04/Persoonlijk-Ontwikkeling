@@ -11,13 +11,14 @@ npm run dev
 
 ## GitHub Pages
 
-Deze repository bevat een GitHub Actions-workflow in `.github/workflows/deploy-pages.yml`.
+Deze repository bevat ook een statische `docs/`-versie zonder buildstap.
 
 Na het pushen naar de `main`-branch:
 
 1. Open de repository op GitHub.
 2. Ga naar `Settings` > `Pages`.
-3. Kies bij source voor `GitHub Actions`.
-4. Wacht tot de workflow `Deploy GitHub Pages` klaar is.
+3. Kies bij source voor `Deploy from a branch`.
+4. Selecteer branch `main` en map `/docs`.
+5. Sla op.
 
 Daarna staat de site live op de GitHub Pages-URL van de repository.
