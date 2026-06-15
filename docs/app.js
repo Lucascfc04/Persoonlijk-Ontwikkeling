@@ -186,6 +186,7 @@ function renderDashboard(results) {
         <p class="eyebrow">Assessmentchecker Minor Circulaire Economie</p>
         <h2>Persoonlijke voorbereiding op mijn assessment over de Green Blue HYROX Hub</h2>
         <p class="muted">Gebruik deze tool om per criterium je reflectietekst te scherpen, bewijs te verzamelen, zelftoetsvragen te beantwoorden en direct te zien hoe sterk jouw verslag nu staat.</p>
+        <div class="info-banner"><strong>HAN-geinspireerde richting:</strong> open, groen, helder en gericht op slim, schoon en sociaal handelen.</div>
       </div>
       <div class="panel">
         <p class="eyebrow">Totaaloverzicht</p>
