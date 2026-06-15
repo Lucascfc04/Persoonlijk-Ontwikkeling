@@ -1,4 +1,4 @@
-import { criteria, defaultReflection, projectContext, scoreOptionLabels } from "./data.js";
+import { criteria, defaultReflection, projectContext, reportSource, scoreOptionLabels } from "./data.js";
 
 const STORAGE_KEY = "minor-circulaire-economie-assessmentchecker-static";
 const MAX_TOTAL_POINTS = 48;
@@ -60,6 +60,7 @@ function buildInitialState() {
       leerproces: defaultReflection.leerproces,
       ontwikkeling: defaultReflection.ontwikkeling
     },
+    reportLoaded: true,
     answersByCriterion: Object.fromEntries(criteria.map((criterion) => [criterion.id, criterion.selfCheckQuestions.map(() => 0)])),
     evidenceByCriterion: Object.fromEntries(criteria.map((criterion) => [criterion.id, []])),
     practiceAnswers: Object.fromEntries(criteria.map((criterion) => [criterion.id, Object.fromEntries(criterion.assessorQuestions.map((question) => [question, ""]))]))
@@ -168,6 +169,9 @@ function buildFinalSubmission() {
     lines.push(state.reflections[criterion.id] || "");
     lines.push("");
   });
+  lines.push("Eindreflectie");
+  lines.push(defaultReflection.eindreflectie);
+  lines.push("");
   return lines.join("\n");
 }
 
@@ -190,6 +194,22 @@ function renderDashboard(results) {
           <div class="sub-card"><p class="muted tiny">Eindcijfer</p><div class="score-value">${results.eindcijfer}</div></div>
           <div class="sub-card"><p class="muted tiny">Status</p><div class="score-value" style="font-size:1.5rem">${results.status}</div></div>
         </div>
+      </div>
+    </section>
+    <section class="grid-2" style="margin-top:16px">
+      <div class="panel">
+        <p class="eyebrow">Verslagbasis</p>
+        <h2>${reportSource.title}</h2>
+        <p class="muted">${reportSource.description}</p>
+        <p class="muted tiny">Bronpad: ${reportSource.path}</p>
+        <div class="action-row">
+          <button class="secondary-button" id="load-report">Gebruik mijn verslag als basis</button>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="eyebrow">Toetsstatus</p>
+        <h2>${state.reportLoaded ? "Verslag geladen" : "Aangepaste invoer actief"}</h2>
+        <p class="muted">${state.reportLoaded ? "De tekstvelden zijn gebaseerd op jouw uitgelezen persoonlijke ontwikkelverslag." : "Je werkt nu met aangepaste tekst ten opzichte van de geladen verslagbasis."}</p>
       </div>
     </section>
     ${results.eigenaarschapWarning ? `<div class="warning">Let op: eigenaarschap is een drempelcriterium. Een onvoldoende op dit criterium kan betekenen dat het hele assessment onvoldoende is.</div>` : ""}
@@ -286,8 +306,21 @@ function renderExport(results) {
   return `<section class="grid-3">
     <div class="export-card"><p class="eyebrow">Export</p><h2>Exporteer samenvatting</h2><p class="muted">Download een tekstbestand met projectcontext, reflectieteksten, geselecteerd bewijs, scores en oefenantwoorden.</p><button class="primary-button" id="export-summary">Exporteer samenvatting</button></div>
     <div class="export-card"><p class="eyebrow">Inleverversie</p><h2>Download eindversie</h2><p class="muted">Download een schone tekstversie van jouw huidige reflectieteksten per criterium.</p><button class="secondary-button" id="download-final">Download eindversie</button></div>
-    <div class="export-card"><p class="eyebrow">Assessmentpitch</p><h2>Kopieer assessmentpitch</h2><p class="muted">Maak in een klik een korte openingspitch op basis van jouw project, eigen bijdrage, beroepsproducten, leerpunt en ontwikkeling.</p><button class="secondary-button" id="copy-pitch">Kopieer assessmentpitch</button><p id="copy-state" class="muted tiny"></p></div>
+    <div class="export-card"><p class="eyebrow">Assessmentpitch</p><h2>Kopieer assessmentpitch</h2><p class="muted">Maak in een klik een korte openingspitch op basis van jouw project, eigen bijdrage, beroepsproducten, leerpunt en ontwikkeling.</p><div class="action-row"><button class="secondary-button" id="copy-pitch">Kopieer assessmentpitch</button><button class="tertiary-button" id="load-report-export">Laad verslag opnieuw</button></div><p id="copy-state" class="muted tiny"></p></div>
   </section>`;
+}
+
+function loadReportAsBase() {
+  state.reflections = {
+    beroepsproducten: defaultReflection.beroepsproducten,
+    eigenaarschap: defaultReflection.eigenaarschap,
+    reflectie: defaultReflection.reflectie,
+    leerproces: defaultReflection.leerproces,
+    ontwikkeling: defaultReflection.ontwikkeling
+  };
+  state.reportLoaded = true;
+  saveState();
+  render();
 }
 
 function render() {
@@ -332,12 +365,16 @@ document.addEventListener("click", async (event) => {
       window.prompt("Kopieer hieronder je assessmentpitch:", pitch);
     }
   }
+  if (event.target.id === "load-report" || event.target.id === "load-report-export") {
+    loadReportAsBase();
+  }
 });
 
 document.addEventListener("change", (event) => {
   const reflection = event.target.closest("[data-reflection]");
   if (reflection) {
     state.reflections[reflection.dataset.reflection] = reflection.value;
+    state.reportLoaded = false;
     saveState();
     return;
   }
@@ -366,6 +403,7 @@ document.addEventListener("input", (event) => {
   const reflection = event.target.closest("[data-reflection]");
   if (reflection) {
     state.reflections[reflection.dataset.reflection] = reflection.value;
+    state.reportLoaded = false;
     saveState();
   }
 });

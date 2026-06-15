@@ -13,6 +13,13 @@ export const projectContext = {
   reminders: ["Gebruik steeds de formulering HYROX-geinspireerd.", "Maak onderscheid tussen projectcontext en persoonlijke reflectie.", "Benadruk eigen bijdrage: concept, deskresearch, visualisaties en website.", "Koppel circulariteit aan toekomstbestendig gebruik, waardecreatie en systeemdenken."]
 };
 
+export const reportSource = {
+  title: "Verslag Persoonlijke ontwikkeling.docx",
+  path: "/Users/lucaszweers/Documents/Verslag Persoonlijke ontwikkeling.docx",
+  description:
+    "De assessmentchecker gebruikt de inhoud van dit verslag als basis voor de reflectieteksten en beoordeling."
+};
+
 export const defaultReflection = {
   beroepsproducten: `Tijdens het project heb ik aan verschillende beroepsproducten gewerkt die samen laten zien wat wij hebben onderzocht, bedacht en uitgewerkt. Mijn belangrijkste bijdragen waren de deskresearch, de trendanalyse, de visualisaties, het Hyrox-concept en de website waarop alles overzichtelijk is samengebracht.
 
@@ -78,7 +85,16 @@ Eerder had circulariteit voor mij soms een wat abstract of zelfs belemmerend ima
 
 Voor mij is dit een belangrijke verandering in mijn professionele houding. Ik kijk nu niet alleen meer naar wat praktisch of logisch lijkt op korte termijn, maar ook naar wat een keuze betekent voor de toekomst. Ik denk meer na over de waarde die een oplossing toevoegt, de impact die het heeft en de afhankelijkheden die ermee samenhangen. Dat past bij circulair denken, omdat je verder kijkt dan een product, een oplossing of een moment.
 
-Deze kennis neem ik mee naar mijn toekomst. Ik kan mij nu beter verplaatsen in de circulaire economie en ik wil deze kennis gebruiken in mijn toekomstige baan. Vooral binnen de foodsector zie ik mogelijkheden om circulaire aanpassingen te maken en bewuster na te denken over grondstoffen, ketens en impact. Ik wil daarbij niet alleen kijken naar hoe iets efficienter kan, maar ook naar hoe keuzes kunnen bijdragen aan minder verspilling, meer toekomstbestendigheid en betere waardecreatie.`
+Deze kennis neem ik mee naar mijn toekomst. Ik kan mij nu beter verplaatsen in de circulaire economie en ik wil deze kennis gebruiken in mijn toekomstige baan. Vooral binnen de foodsector zie ik mogelijkheden om circulaire aanpassingen te maken en bewuster na te denken over grondstoffen, ketens en impact. Ik wil daarbij niet alleen kijken naar hoe iets efficienter kan, maar ook naar hoe keuzes kunnen bijdragen aan minder verspilling, meer toekomstbestendigheid en betere waardecreatie.`,
+  eindreflectie: `Tijdens deze minor heb ik veel geleerd. Ik heb geleerd door dingen fout te doen, maar ook door de workshops en lessen die tijdens de minor zijn aangeboden. Ik heb mij ontwikkeld op persoonlijk vlak, maar ook op het gebied van kennis en professioneel denken.
+
+Een belangrijk inzicht voor mij is dat een goed project niet alleen draait om een goed idee, maar ook om structuur, planning, validatie en samenwerking. Ik heb gemerkt dat ik creatief kan zijn en snel tot concrete producten kan komen, zoals visualisaties, een website en prototypes. Tegelijkertijd heb ik geleerd dat ik eerder moet beginnen en mijn werk vaker moet toetsen bij de opdrachtgever of andere betrokkenen.
+
+Ook heb ik veel geleerd over AI. Ik kan AI nu beter gebruiken om mijn werk te versterken, bijvoorbeeld bij het maken van visualisaties, websites, bots en prototypes. Dit geeft mij meer mogelijkheden om ideeen concreet te maken en professioneel te presenteren. Voor circulaire projecten kan dit waardevol zijn, omdat je complexe ideeen sneller zichtbaar en bespreekbaar kunt maken. Wel blijft het belangrijk dat ik zelf kritisch blijf nadenken over de inhoud en niet alleen vertrouw op wat AI oplevert.
+
+Daarnaast is mijn kijk op circulariteit veranderd. Ik zie circulariteit nu niet meer alleen als recycling, maar als een bredere manier van denken over systemen, grondstoffen, waardecreatie en toekomstbestendigheid. Ik ben mij bewuster geworden van het feit dat circulaire economie vraagt om kritisch kijken naar bestaande systemen en om het zoeken naar oplossingen die op langere termijn waarde toevoegen.
+
+Met alles wat ik tijdens deze minor heb geleerd, verwacht ik dat ik een betere food professional word. Ik heb meer kennis gekregen, ben bewuster gaan nadenken over circulariteit en heb mij persoonlijk ontwikkeld in structuur, samenwerking en het gebruik van AI. In mijn toekomstige werk wil ik deze ontwikkeling meenemen door circulaire keuzes beter te onderbouwen, verder te kijken dan korte termijn oplossingen en meer rekening te houden met impact, ketens en toekomstbestendigheid.`
 };
 
 export const scoreOptionLabels = [{ label: "Nee", value: 0 }, { label: "Deels", value: 1 }, { label: "Ja", value: 2 }, { label: "Sterk", value: 3 }];

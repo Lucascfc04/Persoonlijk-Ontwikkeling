@@ -117,6 +117,7 @@ input {
 .pill-button,
 .primary-button,
 .secondary-button,
+.tertiary-button,
 .danger-button {
   border: 0;
   border-radius: 999px;
@@ -361,6 +362,13 @@ details.practice-item {
   color: var(--green-900);
 }
 
+.tertiary-button {
+  background: #f3f4f6;
+  color: #1f2937;
+  padding: 12px 18px;
+  font-weight: 800;
+}
+
 .export-card p,
 .panel p,
 .criterion-card p,
@@ -386,6 +394,13 @@ details.practice-item {
 
 .tiny {
   font-size: 0.92rem;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .ok {
