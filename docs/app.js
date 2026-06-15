@@ -62,6 +62,19 @@ function improvementAdvice(score) {
   return "Dit criterium is sterk. Houd je tekst scherp, concreet en bewijsgericht zodat je deze kwaliteit ook mondeling overtuigend kunt verdedigen.";
 }
 
+function assessorToneAdvice(criterionName, score, positives = [], missing = []) {
+  if (score === 1) {
+    return `Als assessor zou ik hier nog te weinig houvast zien voor ${criterionName.toLowerCase()}. Maak expliciet wat jij hebt gedaan, waarom dat relevant was en welk bewijs dit ondersteunt.`;
+  }
+  if (score === 2) {
+    return `De basis voor ${criterionName.toLowerCase()} is zichtbaar, maar ik zou als assessor nog meer concrete onderbouwing willen horen. Werk vooral uit: ${missing.slice(0, 3).join(", ") || "keuzes, argumentatie en bewijs"}.`;
+  }
+  if (score === 3) {
+    return `Dit oogt voldoende voor ${criterionName.toLowerCase()}. Wat nu al overtuigt: ${positives.slice(0, 3).join(", ") || "de hoofdlijn van je verhaal"}. Voor een hogere score moet de koppeling tussen keuze, bewijs en reflectie nog explicieter.`;
+  }
+  return `Dit leest al sterk voor ${criterionName.toLowerCase()}. Als assessor zie ik vooral overtuigingskracht in ${positives.slice(0, 3).join(", ") || "de combinatie van inhoud, bewijs en reflectie"}. Houd dit niveau vast door mondeling net zo concreet te blijven.`;
+}
+
 function statusFromPoints(totalPoints) {
   if (totalPoints <= 24) return "onvoldoende";
   if (totalPoints <= 26) return "grens zakken/slagen";
@@ -98,11 +111,17 @@ function buildTextAnalysis() {
 
   criteria.forEach((criterion) => {
     const text = state.reflections[criterion.id] || "";
+    const paragraphs = text.split(/\n+/).map((item) => item.trim()).filter(Boolean);
     const rules = ANALYSIS_RULES[criterion.id];
     const matchedSignals = uniqueMatches(text, rules.signals);
     const matchedSpecial = uniqueMatches(text, rules.special);
     const evidenceMentions = criterion.evidence.filter((item) => normalizeText(text).includes(item.label.toLowerCase()) || (state.evidenceByCriterion[criterion.id] || []).includes(item.label));
     const connectorCount = uniqueMatches(text, ["omdat", "daardoor", "waardoor", "hierdoor", "daarnaast", "tegelijkertijd", "achteraf", "bijvoorbeeld", "in de toekomst"]).length;
+    const firstPersonCount = uniqueMatches(text, ["ik heb", "ik", "mijn", "voor mij", "ik koos", "ik merkte"]).length;
+    const paragraphCoverage = paragraphs.filter((paragraph) => {
+      const lower = normalizeText(paragraph);
+      return rules.signals.some((signal) => lower.includes(signal.toLowerCase())) || rules.special.some((signal) => lower.includes(signal.toLowerCase()));
+    }).length;
     const words = countWords(text);
 
     const metrics = [
@@ -110,13 +129,27 @@ function buildTextAnalysis() {
       metricFromThresholds(matchedSignals.length, [2, 4, 6]),
       metricFromThresholds(matchedSpecial.length, [1, 2, 4]),
       metricFromThresholds(evidenceMentions.length, [1, 3, 5]),
-      metricFromThresholds(connectorCount, [2, 4, 6])
+      metricFromThresholds(connectorCount, [2, 4, 6]),
+      metricFromThresholds(firstPersonCount, [2, 4, 6]),
+      metricFromThresholds(paragraphCoverage, [2, 3, 5])
     ];
 
     const average = metrics.reduce((sum, value) => sum + value, 0) / metrics.length;
     const score = scoreFromAverage(average);
     const weighted = score * criterion.weging;
     const missingSignals = rules.signals.filter((signal) => !matchedSignals.includes(signal)).slice(0, 4);
+    const strengths = [];
+    if (words >= 140) strengths.push("voldoende inhoudelijke lengte");
+    if (matchedSignals.length >= 4) strengths.push("duidelijke criteriumtaal");
+    if (evidenceMentions.length >= 3) strengths.push("zichtbare bewijsverwijzingen");
+    if (connectorCount >= 4) strengths.push("uitleg van oorzaak en gevolg");
+    if (firstPersonCount >= 3) strengths.push("duidelijke ik-positie");
+    if (paragraphCoverage >= 3) strengths.push("spreiding over meerdere alinea's");
+    const paragraphFindings = paragraphs.slice(0, 8).map((paragraph) => {
+      const lower = normalizeText(paragraph);
+      const hits = [...rules.signals, ...rules.special].filter((signal) => lower.includes(signal.toLowerCase())).slice(0, 3);
+      return { text: paragraph, hits };
+    }).filter((item) => item.hits.length);
 
     byCriterion[criterion.id] = {
       average,
@@ -126,11 +159,10 @@ function buildTextAnalysis() {
       matchedSignals,
       evidenceMentions: evidenceMentions.map((item) => item.label),
       missingSignals,
+      strengths,
+      paragraphFindings,
       words,
-      advice:
-        score <= 2
-          ? `De tekstanalyse mist nog duidelijke signalen zoals: ${missingSignals.join(", ") || "meer concrete onderbouwing"}.`
-          : "De tekstanalyse ziet voldoende inhoudssignalen. Houd de tekst concreet en bewijsgericht."
+      advice: assessorToneAdvice(criterion.naam, score, strengths, missingSignals)
     };
   });
 
@@ -336,6 +368,11 @@ function renderDashboard(results) {
         <div class="action-row">
           <button class="secondary-button" id="load-report">Gebruik mijn verslag als basis</button>
         </div>
+        <div class="upload-box">
+          <strong>Laad een nieuw verslag</strong>
+          <p class="muted tiny">Ondersteunt `.docx` en `.txt`. De site verdeelt de tekst daarna automatisch over de criteria.</p>
+          <input type="file" id="report-upload" accept=".docx,.txt,.md" />
+        </div>
       </div>
       <div class="panel">
         <p class="eyebrow">Toetsstatus</p>
@@ -447,11 +484,20 @@ function renderCriteria(results) {
             <div class="analysis-card">
               <p class="eyebrow">Wat herkent de site</p>
               <ul class="analysis-list">
+                <li><strong>Sterke punten:</strong> ${autoResult.strengths.join(", ") || "nog weinig duidelijke sterke punten herkend"}</li>
                 <li><strong>Gevonden signalen:</strong> ${autoResult.matchedSignals.slice(0, 6).join(", ") || "nog weinig duidelijke signalen"}</li>
                 <li><strong>Mogelijk nog toevoegen:</strong> ${autoResult.missingSignals.join(", ") || "kernsignalen zijn redelijk aanwezig"}</li>
                 <li><strong>Gevonden bewijswoorden:</strong> ${autoResult.evidenceMentions.join(", ") || "nog geen duidelijke bewijswoorden gevonden"}</li>
               </ul>
             </div>
+          </div>
+          <div class="analysis-card" style="margin-top:18px">
+            <p class="eyebrow">Analyse per alinea</p>
+            <ul class="analysis-list">
+              ${autoResult.paragraphFindings.length
+                ? autoResult.paragraphFindings.slice(0, 4).map((item, index) => `<li><strong>Alinea ${index + 1}:</strong> herkent ${item.hits.join(", ")}</li>`).join("")
+                : "<li>Er zijn nog weinig alinea's met duidelijke criteriumsignalen herkend.</li>"}
+            </ul>
           </div>
         </div>
       </details>
@@ -491,6 +537,66 @@ function loadReportAsBase() {
   state.reportLoaded = true;
   saveState();
   render();
+}
+
+function assignUploadedTextToCriteria(text) {
+  const sections = {};
+  const lines = text.split(/\r?\n/);
+  let current = null;
+
+  const sectionMap = [
+    { key: "beroepsproducten", match: /criterium\s*1|beroepsproducten/i },
+    { key: "eigenaarschap", match: /criterium\s*2|eigenaarschap/i },
+    { key: "reflectie", match: /criterium\s*3|reflectie/i },
+    { key: "leerproces", match: /criterium\s*4|leerproces/i },
+    { key: "ontwikkeling", match: /criterium\s*5|ontwikkeling/i }
+  ];
+
+  lines.forEach((line) => {
+    const found = sectionMap.find((section) => section.match.test(line));
+    if (found) {
+      current = found.key;
+      sections[current] = [];
+      return;
+    }
+    if (current) sections[current].push(line);
+  });
+
+  if (Object.keys(sections).length >= 3) {
+    criteria.forEach((criterion) => {
+      const sectionText = (sections[criterion.id] || []).join("\n").trim();
+      if (sectionText) state.reflections[criterion.id] = sectionText;
+    });
+  } else {
+    const paragraphs = text.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
+    criteria.forEach((criterion, index) => {
+      state.reflections[criterion.id] = paragraphs[index] || state.reflections[criterion.id];
+    });
+  }
+
+  state.reportLoaded = false;
+  saveState();
+  render();
+}
+
+async function handleUploadedFile(file) {
+  if (!file) return;
+  const fileName = file.name.toLowerCase();
+
+  if (fileName.endsWith(".txt") || fileName.endsWith(".md")) {
+    const text = await file.text();
+    assignUploadedTextToCriteria(text);
+    return;
+  }
+
+  if (fileName.endsWith(".docx")) {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await window.mammoth.extractRawText({ arrayBuffer });
+    assignUploadedTextToCriteria(result.value || "");
+    return;
+  }
+
+  window.alert("Gebruik een .docx, .txt of .md bestand.");
 }
 
 function render() {
@@ -581,6 +687,18 @@ document.addEventListener("input", (event) => {
     state.reflections[reflection.dataset.reflection] = reflection.value;
     state.reportLoaded = false;
     saveState();
+  }
+});
+
+document.addEventListener("change", async (event) => {
+  if (event.target.id === "report-upload") {
+    const file = event.target.files?.[0];
+    try {
+      await handleUploadedFile(file);
+    } catch (error) {
+      window.alert("Het uploaden van dit verslag is niet gelukt.");
+      console.error(error);
+    }
   }
 });
 

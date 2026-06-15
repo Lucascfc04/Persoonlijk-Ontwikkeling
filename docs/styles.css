@@ -532,6 +532,19 @@ details.practice-item {
   font-weight: 900;
 }
 
+.upload-box {
+  border: 1px dashed var(--line);
+  background: #f9fcfa;
+  border-radius: 22px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.upload-box input[type="file"] {
+  display: block;
+  margin-top: 10px;
+}
+
 .quick-list {
   display: grid;
   gap: 10px;
