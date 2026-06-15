@@ -196,6 +196,12 @@ function renderDashboard(results) {
         </div>
       </div>
     </section>
+    <section class="grid-auto" style="margin-top:16px">
+      <div class="sub-card compact"><p class="muted tiny">Drempelcriterium</p><div style="font-size:1.1rem;font-weight:900">${results.byCriterion.eigenaarschap.label}</div></div>
+      <div class="sub-card compact"><p class="muted tiny">Belangrijkste focus</p><div style="font-size:1.1rem;font-weight:900">Eigen bijdrage concreet maken</div></div>
+      <div class="sub-card compact"><p class="muted tiny">Aanpak</p><div style="font-size:1.1rem;font-weight:900">Vragen, bewijs, daarna tekst</div></div>
+      <div class="sub-card compact"><p class="muted tiny">Doel</p><div style="font-size:1.1rem;font-weight:900">Richting voldoende of goed</div></div>
+    </section>
     <section class="grid-2" style="margin-top:16px">
       <div class="panel">
         <p class="eyebrow">Verslagbasis</p>
@@ -210,6 +216,11 @@ function renderDashboard(results) {
         <p class="eyebrow">Toetsstatus</p>
         <h2>${state.reportLoaded ? "Verslag geladen" : "Aangepaste invoer actief"}</h2>
         <p class="muted">${state.reportLoaded ? "De tekstvelden zijn gebaseerd op jouw uitgelezen persoonlijke ontwikkelverslag." : "Je werkt nu met aangepaste tekst ten opzichte van de geladen verslagbasis."}</p>
+        <div class="quick-list">
+          <div class="quick-item"><strong>Stap 1</strong><span class="muted">Beantwoord eerst de zelftoets</span></div>
+          <div class="quick-item"><strong>Stap 2</strong><span class="muted">Selecteer bewijs per criterium</span></div>
+          <div class="quick-item"><strong>Stap 3</strong><span class="muted">Scherp alleen de zwakste delen aan</span></div>
+        </div>
       </div>
     </section>
     ${results.eigenaarschapWarning ? `<div class="warning">Let op: eigenaarschap is een drempelcriterium. Een onvoldoende op dit criterium kan betekenen dat het hele assessment onvoldoende is.</div>` : ""}
@@ -250,48 +261,62 @@ function renderCriteria(results) {
     const answers = state.answersByCriterion[criterion.id];
     const evidence = state.evidenceByCriterion[criterion.id];
     return `<article class="criterion-card">
-      <div class="criterion-head">
-        <div>
-          <div class="badge-row">
-            <span class="badge">Criterium ${criterion.nummer}</span>
-            <span class="badge">Weging x${criterion.weging}</span>
-            ${criterion.threshold ? `<span class="badge rose">Drempelcriterium</span>` : ""}
+      <details class="criterion-toggle" ${criterion.nummer === 1 ? "open" : ""}>
+        <summary>
+          <div class="criterion-summary">
+            <div>
+              <div class="badge-row">
+                <span class="badge">Criterium ${criterion.nummer}</span>
+                <span class="badge">Weging x${criterion.weging}</span>
+                ${criterion.threshold ? `<span class="badge rose">Drempelcriterium</span>` : ""}
+              </div>
+              <h2>${criterion.naam}</h2>
+              <p><strong>${criterion.omschrijving}</strong></p>
+              <p class="muted">${criterion.whatToShow}</p>
+              <div class="toggle-label">Snelle samenvatting</div>
+            </div>
+            <div>
+              ${renderScoreCard(`Score ${criterion.naam}`, result)}
+              <div class="quick-list">
+                <div class="quick-item"><strong>Bewijs</strong><span class="muted">${evidence.length} geselecteerd</span></div>
+                <div class="quick-item"><strong>Niveau</strong><span class="${result.evidenceInfo.className}">${result.evidenceInfo.label}</span></div>
+                <div class="quick-item"><strong>Actie</strong><span class="muted">${result.score <= 2 ? "Nu aanscherpen" : "Vasthouden"}</span></div>
+              </div>
+            </div>
           </div>
-          <h2>${criterion.naam}</h2>
-          <p><strong>${criterion.omschrijving}</strong></p>
-          <p class="muted">${criterion.whatToShow}</p>
-          <div class="sub-card"><p class="eyebrow">Waarop wordt gelet</p><div class="focus-points">${criterion.focusPoints.map((point) => `<span class="chip soft">${point}</span>`).join("")}</div></div>
-        </div>
-        ${renderScoreCard(`Score ${criterion.naam}`, result)}
-      </div>
-      ${criterion.threshold && result.score === 1 ? `<div class="warning">${criterion.thresholdMessage}</div>` : ""}
-      <div class="split">
-        <div class="panel">
-          <p class="eyebrow">Reflectietekst</p>
-          <textarea data-reflection="${criterion.id}">${state.reflections[criterion.id] || ""}</textarea>
-        </div>
-        <div>
-          <div class="panel">
-            <p class="eyebrow">Zelftoetsvragen</p>
-            ${criterion.selfCheckQuestions.map((question, index) => `<div class="question-card"><div>${question}</div><div class="options">${scoreOptionLabels.map((option) => `<button class="pill-button ${answers[index] === option.value ? "active" : ""}" data-answer="${criterion.id}" data-index="${index}" data-value="${option.value}">${option.label}</button>`).join("")}</div></div>`).join("")}
+        </summary>
+        <div class="criterion-details">
+          <div class="info-banner"><strong>Waarop wordt gelet:</strong> ${criterion.focusPoints.join(", ")}</div>
+          ${criterion.threshold && result.score === 1 ? `<div class="warning">${criterion.thresholdMessage}</div>` : ""}
+          <div class="split">
+            <div class="panel">
+              <p class="eyebrow">Reflectietekst</p>
+              <textarea data-reflection="${criterion.id}">${state.reflections[criterion.id] || ""}</textarea>
+            </div>
+            <div>
+              <div class="panel">
+                <p class="eyebrow">Zelftoetsvragen</p>
+                ${criterion.selfCheckQuestions.map((question, index) => `<div class="question-card"><div>${question}</div><div class="options">${scoreOptionLabels.map((option) => `<button class="pill-button ${answers[index] === option.value ? "active" : ""}" data-answer="${criterion.id}" data-index="${index}" data-value="${option.value}">${option.label}</button>`).join("")}</div></div>`).join("")}
+              </div>
+              <div class="panel" style="margin-top:18px">
+                <p class="eyebrow">Mogelijk bewijsmateriaal</p>
+                <div class="evidence-grid">${criterion.evidence.map((item) => `<label class="evidence-item"><input type="checkbox" data-evidence="${criterion.id}" value="${item.label}" ${evidence.includes(item.label) ? "checked" : ""}><span><strong>${item.label}</strong><br><span class="muted tiny">${item.ownContribution ? "Laat vooral jouw eigen bijdrage zien." : "Ondersteunend bewijs."}</span></span></label>`).join("")}</div>
+              </div>
+            </div>
           </div>
-          <div class="panel" style="margin-top:18px">
-            <p class="eyebrow">Mogelijk bewijsmateriaal</p>
-            <div class="evidence-grid">${criterion.evidence.map((item) => `<label class="evidence-item"><input type="checkbox" data-evidence="${criterion.id}" value="${item.label}" ${evidence.includes(item.label) ? "checked" : ""}><span><strong>${item.label}</strong><br><span class="muted tiny">${item.ownContribution ? "Laat vooral jouw eigen bijdrage zien." : "Ondersteunend bewijs."}</span></span></label>`).join("")}</div>
+          <div class="grid-3" style="margin-top:18px">
+            <div class="sub-card"><p class="eyebrow">Verbeteradvies</p><p class="muted">${result.advice}</p></div>
+            <div class="sub-card"><p class="eyebrow">Assessmenttip</p><p class="muted">${criterion.assessmentTip}</p></div>
+            <div class="sub-card"><p class="eyebrow">Mogelijke assesservragen</p><ul class="simple-list">${criterion.assessorQuestions.slice(0, 3).map((question) => `<li>${question}</li>`).join("")}</ul></div>
           </div>
         </div>
-      </div>
-      <div class="grid-3" style="margin-top:18px">
-        <div class="sub-card"><p class="eyebrow">Verbeteradvies</p><p class="muted">${result.advice}</p></div>
-        <div class="sub-card"><p class="eyebrow">Assessmenttip</p><p class="muted">${criterion.assessmentTip}</p></div>
-        <div class="sub-card"><p class="eyebrow">Mogelijke assesservragen</p><ul class="simple-list">${criterion.assessorQuestions.slice(0, 3).map((question) => `<li>${question}</li>`).join("")}</ul></div>
-      </div>
+      </details>
     </article>`;
   }).join("");
 }
 
 function renderEvidence(results) {
-  return `<section><div class="panel"><h2>Bewijschecker</h2><p class="muted">Gebruik deze sectie om per criterium te controleren of je genoeg bewijs hebt en welke stukken vooral jouw eigen bijdrage laten zien.</p></div>${criteria.map((criterion) => {
+  return `<section><div class="panel"><h2>Bewijschecker</h2><p class="muted">Gebruik deze sectie om per criterium te controleren of je genoeg bewijs hebt en welke stukken vooral jouw eigen bijdrage laten zien.</p><div class="info-banner"><strong>Handige volgorde:</strong> begin bij eigenaarschap, daarna beroepsproducten en reflectie.</div></div>${criteria.map((criterion) => {
     const selected = state.evidenceByCriterion[criterion.id] || [];
     const result = results.byCriterion[criterion.id];
     return `<article class="criterion-card"><div class="score-row"><div><p class="eyebrow">Criterium ${criterion.nummer}</p><h2>${criterion.naam}</h2></div><div class="${result.evidenceInfo.className}"><strong>${result.evidenceInfo.label}</strong></div></div><div class="panel" style="margin-top:16px"><div class="evidence-grid">${criterion.evidence.map((item) => `<label class="evidence-item"><input type="checkbox" data-evidence="${criterion.id}" value="${item.label}" ${selected.includes(item.label) ? "checked" : ""}><span><strong>${item.label}</strong><br><span class="muted tiny">${item.ownContribution ? "Laat vooral jouw eigen bijdrage zien." : "Ondersteunend bewijs."}</span></span></label>`).join("")}</div><div class="summary-box"><strong>Eigen bijdrage zichtbaar in</strong><p class="muted">${result.ownContributionEvidence.length ? result.ownContributionEvidence.join(", ") : "Nog geen bewijs geselecteerd dat expliciet jouw eigen bijdrage laat zien."}</p></div></div><div class="grid-3" style="margin-top:16px"><div class="sub-card"><p class="muted tiny">Aantal bewijsstukken</p><div class="score-value">${selected.length}</div></div><div class="sub-card"><p class="muted tiny">Bewijsniveau</p><div class="${result.evidenceInfo.className}" style="font-size:1.5rem;font-weight:900">${result.evidenceInfo.label}</div></div><div class="sub-card"><p class="muted tiny">Tip</p><p class="muted">${result.evidenceInfo.tip}</p></div></div></article>`;
@@ -299,7 +324,7 @@ function renderEvidence(results) {
 }
 
 function renderPractice() {
-  return `<section><div class="panel"><h2>Assessmentvragen oefenen</h2><p class="muted">Schrijf per criterium alvast kernachtige antwoorden. Alles wordt opgeslagen in localStorage.</p></div>${criteria.map((criterion) => `<article class="criterion-card"><p class="eyebrow">Criterium ${criterion.nummer}</p><h2>${criterion.naam}</h2>${criterion.assessorQuestions.map((question) => `<details class="practice-item"><summary><strong>${question}</strong></summary><textarea class="practice-answer" data-practice="${criterion.id}" data-question="${encodeURIComponent(question)}">${state.practiceAnswers[criterion.id]?.[question] || ""}</textarea></details>`).join("")}</article>`).join("")}</section>`;
+  return `<section><div class="panel"><h2>Assessmentvragen oefenen</h2><p class="muted">Schrijf per criterium alvast kernachtige antwoorden. Alles wordt opgeslagen in localStorage.</p><div class="info-banner"><strong>Tip:</strong> houd je antwoord kort, concreet en in de ik-vorm.</div></div>${criteria.map((criterion) => `<article class="criterion-card"><p class="eyebrow">Criterium ${criterion.nummer}</p><h2>${criterion.naam}</h2>${criterion.assessorQuestions.map((question) => `<details class="practice-item"><summary><strong>${question}</strong></summary><textarea class="practice-answer" data-practice="${criterion.id}" data-question="${encodeURIComponent(question)}">${state.practiceAnswers[criterion.id]?.[question] || ""}</textarea></details>`).join("")}</article>`).join("")}</section>`;
 }
 
 function renderExport(results) {
